@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JEE Journey - Daily Targets</title>
+  <style>
+    /* ====== GLOBAL ====== */
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: #000;
+      color: #FFD700;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding: 12px;
+      z-index: 1000;
+    }
+    header a {
+      text-decoration: none;
+      color: #FFD700;
+      margin: 0 15px;
+      font-weight: bold;
+      transition: color 0.3s;
+    }
+    header a:hover { color: #fff; }
+
+    section { display: none; padding: 30px 20px; min-height: 90vh; animation: fade 0.5s ease; }
+    section.active { display: block; }
+    @keyframes fade { from {opacity: 0;} to {opacity:1;} }
+
+    h1,h2,h3 { color: #FFD700; }
+    button {
+      background: #FFD700;
+      color: #000;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 25px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover { background: #fff; transform: scale(1.05); }
+
+    input, textarea {
+      width: 100%; padding: 10px; margin: 8px 0 18px;
+      border-radius: 6px; border: none; font-size: 1rem;
+    }
+
+    /* ====== HOMEPAGE ====== */
+    #home {
+      display: flex; flex-direction: column; justify-content: center;
+      align-items: center; text-align: center;
+      background: linear-gradient(135deg, #000 65%, #FFD700 35%);
+    }
+    .illustration {
+      width: 260px;
+      margin: 25px 0;
+      animation: float 4s ease-in-out infinite;
+    }
+    #home h1 { font-size: 3rem; margin-bottom: 15px; letter-spacing: 3px; animation: fadeIn 2s; }
+    #home h3 { font-size: 1.2rem; margin-bottom: 20px; animation: fadeIn 3s; color: #fff }
+    footer { text-align:center; padding: 10px; font-size: 0.9rem; color: #ddd; }
+
+    @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-12px);} }
+    @keyframes fadeIn {from {opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);}}
+
+    /* ====== TARGETS ====== */
+    #progress-bar { height:20px; background:#333; border-radius:10px; overflow:hidden; margin:12px 0;}
+    #progress-fill { height:100%; width:0%; background:#FFD700; transition: width 0.4s; }
+    #task-list li { background:#111; padding:10px; border-radius:6px; margin:8px 0; list-style:none; }
+    #task-list button { margin:3px; }
+
+    /* ====== LEADERBOARD ====== */
+    .leaderboard-entry {
+      display:flex; justify-content: space-between;
+      background:#111; padding:10px 15px; margin:6px 0; border-radius:6px;
+    }
+    .leaderboard-entry.current { background: #FFD700; color:#000; font-weight:bold;}
+
+    /* Responsive tweaks */
+    @media (max-width:600px){
+      #home h1{ font-size:2rem; }
+      button { width:100%; }
+      .illustration{ width:200px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header>
+    <a href="#" onclick="showSection('home')">Home</a>
+    <a href="#" onclick="showSection('targets')">My Targets</a>
+    <a href="#" onclick="showSection('leaderboard')">Leaderboard</a>
+    <a href="#" onclick="showSection('invite')">Invite Friends</a>
+  </header>
+
+  <!-- HOMEPAGE -->
+  <section id="home" class="active">
+    <h1>Welcome to JEE Journey</h1>
+    <h3>🚀 One step every day brings you closer to success!</h3>
+    <!-- ✅ FIXED IMAGE (works reliably from unDraw illustrations) -->
+    <img class="illustration" src="https://undraw.co/api/illustrations/3b6d0ec1-4f3d-404e-8007-3cfa8c96e543" alt="Motivational Illustration">
+    <button onclick="showSection('targets')">Set My Daily Targets</button>
+    <footer>✨ Stay consistent. Stay motivated. Crack JEE! ✨</footer>
+  </section>
+
+  <!-- TARGETS PAGE -->
+  <section id="targets">
+    <h2>🎯 My Daily Targets</h2>
+    <div id="quote"></div>
+    <form onsubmit="addTask(event)">
+      <input type="text" id="subject" placeholder="Subject" required>
+      <textarea id="description" placeholder="Description" required></textarea>
+      <input type="datetime-local" id="deadline" required>
+      <button type="submit">Add Target</button>
+    </form>
+    <h3>Progress</h3>
+    <div id="progress-bar"><div id="progress-fill"></div></div>
+    <p id="progress-text"></p>
+    <h3>My Tasks</h3>
+    <ul id="task-list"></ul>
+  </section>
+
+  <!-- INVITE FRIENDS -->
+  <section id="invite">
+    <h2>📱 Invite a Friend</h2>
+    <form onsubmit="generateInvite(event)">
+      <input type="tel" id="phone" placeholder="Enter friend's phone number" required>
+      <button type="submit">Generate Invite</button>
+    </form>
+    <p id="invite-link"></p>
+  </section>
+
+  <!-- LEADERBOARD -->
+  <section id="leaderboard">
+    <h2>🏆 Leaderboard</h2>
+    <div id="leaderboard-list"></div>
+  </section>
+
+  <!-- SCRIPT -->
+  <script>
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [
+      {name:'You', completed:0, current:true},
+      {name:'Friend A', completed:3},
+      {name:'Friend B', completed:2}
+    ];
+
+    const quotes = [
+      "Success comes to those who work hard.",
+      "Your only limit is your mind.",
+      "Push yourself, because no one else is going to do it.",
+      "Every day is a chance to improve."
+    ];
+
+    function showSection(id){
+      document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      if(id==='leaderboard') updateLeaderboard();
+      if(id==='targets') updateProgress();
+    }
+
+    function addTask(e){
+      e.preventDefault();
+      const subj=document.getElementById('subject').value;
+      const desc=document.getElementById('description').value;
+      const deadline=document.getElementById('deadline').value;
+      tasks.push({subject:subj,description:desc,deadline:deadline,done:false});
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      e.target.reset();
+      renderTasks(); updateProgress();
+    }
+    function renderTasks(){
+      const list=document.getElementById('task-list'); list.innerHTML="";
+      tasks.forEach((t,i)=>{
+        const li=document.createElement('li');
+        li.innerHTML=`<b>${t.subject}</b> - ${t.description} (Deadline: ${t.deadline})<br/>
+          <button onclick="toggleTask(${i})">${t.done?'Mark Incomplete':'Mark Complete'}</button>
+          <button onclick="editTask(${i})">Edit</button>
+          <button onclick="deleteTask(${i})">Delete</button>`;
+        li.style.textDecoration = t.done?"line-through":"none";
+        list.appendChild(li);
+      });
+      document.getElementById('quote').innerText=quotes[Math.floor(Math.random()*quotes.length)];
+    }
+    function toggleTask(i){ tasks[i].done=!tasks[i].done; save(); }
+    function editTask(i){
+      let subj=prompt("Edit subject:",tasks[i].subject);
+      let desc=prompt("Edit description:",tasks[i].description);
+      let ddl=prompt("Edit deadline:",tasks[i].deadline);
+      tasks[i]={subject:subj, description:desc, deadline:ddl, done:tasks[i].done};
+      save();
+    }
+    function deleteTask(i){ tasks.splice(i,1); save(); }
+    function save(){ localStorage.setItem('tasks',JSON.stringify(tasks)); renderTasks(); updateProgress(); }
+
+    function updateProgress(){
+      const done=tasks.filter(t=>t.done).length;
+      const total=tasks.length;
+      const percent=total?Math.round(done/total*100):0;
+      document.getElementById('progress-fill').style.width=percent+"%";
+      document.getElementById('progress-text').innerText=`${done}/${total} tasks completed (${percent}%)`;
+      leaderboard=leaderboard.map(m=>{ if(m.current) m.completed=done; return m;});
+      localStorage.setItem('leaderboard',JSON.stringify(leaderboard));
+    }
+
+    function generateInvite(e){
+      e.preventDefault();
+      const phone=document.getElementById('phone').value;
+      document.getElementById('invite-link').innerText=`https://jee-journey.com/invite?phone=${phone}`;
+    }
+
+    function updateLeaderboard(){
+      const list=document.getElementById('leaderboard-list'); list.innerHTML="";
+      leaderboard.sort((a,b)=>b.completed-a.completed).forEach((m,i)=>{
+        const div=document.createElement('div');
+        div.className='leaderboard-entry'+(m.current?' current':'');
+        div.innerText=`${i+1}. ${m.name} - ${m.completed} tasks`;
+        list.appendChild(div);
+      });
+    }
+    renderTasks(); updateProgress();
+  </script>
+</body>
+</html>
